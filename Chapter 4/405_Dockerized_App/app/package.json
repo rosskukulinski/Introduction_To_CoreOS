@@ -1,0 +1,13 @@
+{
+  "name": "docker-node-app",
+  "version": "1.0.0",
+  "description": "Simple dockerized nodejs application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ross Kukulinski <ross@kukulinski.com>",
+  "license": "MIT",
+  "dependencies": {
+  }
+}
