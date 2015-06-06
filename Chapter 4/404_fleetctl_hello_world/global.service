@@ -1,0 +1,15 @@
+[Unit]
+Description=Global Hello Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill global-hello
+ExecStartPre=-/usr/bin/docker rm global-hello
+ExecStartPre=/usr/bin/docker pull busybox
+ExecStart=/usr/bin/docker run --name global-hello busybox /bin/sh -c "while true; do echo Hello global-hello; sleep 1; done"
+ExecStop=-/usr/bin/docker rm -f global-hello
+
+[X-Fleet]
+Global=true

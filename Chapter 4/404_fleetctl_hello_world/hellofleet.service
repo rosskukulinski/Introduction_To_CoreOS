@@ -1,0 +1,12 @@
+[Unit]
+Description=Hello Fleet Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill hello-fleet
+ExecStartPre=-/usr/bin/docker rm hello-fleet
+ExecStartPre=/usr/bin/docker pull busybox
+ExecStart=/usr/bin/docker run --name hello-fleet busybox /bin/sh -c "while true; do echo Hello Fleet; sleep 1; done"
+ExecStop=-/usr/bin/docker rm -f hello-fleet

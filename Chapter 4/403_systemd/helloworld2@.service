@@ -1,0 +1,15 @@
+[Unit]
+Description=%n Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill %p-%i
+ExecStartPre=-/usr/bin/docker rm %p-%i
+ExecStartPre=/usr/bin/docker pull busybox
+ExecStart=/usr/bin/docker run --name %p-%i busybox /bin/sh -c "while true; do echo Hello from %p-%i running on %H; sleep 1; done"
+ExecStop=-/usr/bin/docker rm -f %p-%i
+
+[Install]
+WantedBy=multi-user.target

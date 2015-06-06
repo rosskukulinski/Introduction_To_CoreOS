@@ -1,0 +1,16 @@
+[Unit]
+Description=Hello World Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill hello-world
+ExecStartPre=-/usr/bin/docker rm hello-world
+ExecStartPre=/usr/bin/docker pull busybox
+ExecStart=/usr/bin/docker run --name hello-world busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"
+ExecStop=-/usr/bin/docker rm -f hello-world
+
+
+[Install]
+WantedBy=multi-user.target
