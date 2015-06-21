@@ -8,4 +8,4 @@ ADD . /src/
 
 EXPOSE 3000
 
-CMD ["/usr/local/bin/iojs", "index.js"]
+CMD /usr/local/bin/iojs /src/index.js

@@ -8,7 +8,7 @@ TimeoutStartSec=0
 ExecStartPre=-/usr/bin/docker kill nodeapp-%i
 ExecStartPre=-/usr/bin/docker rm nodeapp-%i
 ExecStartPre=/usr/bin/docker pull rosskukulinski/nodeapp1
-ExecStart=/usr/bin/docker run --name nodeapp-%i --rm -p 3000:3000 -e INSTANCE=%i -e HOST=%H rosskukulinski/nodeapp1
+ExecStart=/usr/bin/docker run --name nodeapp-%i --rm -p 3000:3000 -e INSTANCE=%i rosskukulinski/nodeapp1
 ExecStop=-/usr/bin/docker rm -f nodeapp-%i
 
 [X-Fleet]
