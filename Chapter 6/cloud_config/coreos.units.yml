@@ -1,0 +1,27 @@
+#cloud-config
+coreos:
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: coregi.service
+      command: start
+      content: |
+        [Unit]
+        Description=CoreGI
+        After=docker.service
+        Requires=docker.service
+
+        [Service]
+        User=core
+        TimeoutStartSec=0
+        ExecStartPre=-/usr/bin/docker kill coregi
+        ExecStartPre=-/usr/bin/docker rm coregi
+        ExecStartPre=/usr/bin/docker pull yodlr/coregi:latest
+        ExecStart=/usr/bin/docker run --name coregi \
+              -p 3000:3000 \
+              yodlr/coregi:latest
+        ExecStop=/usr/bin/docker stop coregi
+
+# Additional documenation here: https://coreos.com/os/docs/latest/cloud-config.html

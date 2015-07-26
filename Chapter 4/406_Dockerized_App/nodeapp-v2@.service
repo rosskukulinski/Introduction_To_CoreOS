@@ -1,0 +1,21 @@
+[Unit]
+Description=Simple Node App v2 %i
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill nodeapp-v2-%i
+ExecStartPre=-/usr/bin/docker rm nodeapp-v2-%i
+ExecStartPre=/usr/bin/docker pull rosskukulinski/nodeapp1
+ExecStart=/usr/bin/docker run \
+  --name nodeapp-v2-%i \
+  --rm \
+  -p 3000:3000 \
+  -e INSTANCE=%i \
+  -h %H \
+  rosskukulinski/nodeapp1
+ExecStop=-/usr/bin/docker rm -f nodeapp-v2-%i
+
+[X-Fleet]
+Conflicts=nodeapp-v2@*.service

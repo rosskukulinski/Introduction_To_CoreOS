@@ -1,0 +1,10 @@
+#cloud-config
+coreos:
+  units:
+    - name: media-data.mount
+      command: start
+      content: |
+        [Mount]
+        What=/dev/xvde
+        Where=/media/data
+        Type=ext3

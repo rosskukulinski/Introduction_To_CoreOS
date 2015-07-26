@@ -1,0 +1,10 @@
+[Unit]
+Description=Announce RethinkDB %i service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStart=/bin/sh -c "while true; do etcdctl set /services/rethinkdb/rethinkdb-%i ${COREOS_PUBLIC_IPV4} --ttl 60; sleep 45; done"
+ExecStop=/usr/bin/etcdctl rm /services/rethinkdb/rethinkdb-%i
+
+[X-Fleet]
+X-Conflicts=rethinkdb-announce@*.service

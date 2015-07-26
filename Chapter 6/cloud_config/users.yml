@@ -1,0 +1,13 @@
+#cloud-config
+
+# If you need additional user accounts
+users:
+  - name: rossk
+    groups:
+      - sudo
+      - docker
+      - operations
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0g+ZTxC7weoIJLUafOgrm+h...
+
+# Many more options here: https://coreos.com/os/docs/latest/cloud-config.html

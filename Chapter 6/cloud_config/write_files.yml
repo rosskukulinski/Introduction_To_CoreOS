@@ -1,0 +1,30 @@
+#cloud-config
+write_files:
+  - path: /home/core/.dockercfg
+    owner: core:core
+    permissions: 0644
+    content: |
+      {
+       "quay.io": {
+        "auth": "OURAUTHKEY",
+        "email": "OURAUTHEMAIL"
+       },
+       "https://index.docker.io/v1/": {
+         "auth": "OURAUTHKEY",
+         "email": "OURAUTHEMAIL"
+       },
+      }
+  - path: /home/core/.bashrc
+    owner: core:core
+    permissions: 0655
+    content: |
+      # Test for an interactive shell.  There is no need to set anything
+      # past this point for scp and rcp, and it's important to refrain from
+      # outputting anything in those cases.
+      if [[ $- != *i* ]] ; then
+      	# Shell is non-interactive.  Be done now!
+      	return
+      fi
+      # Put your fun stuff here.
+      alias csysdig="docker run -i -t --rm --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /dev:/host/dev -v /proc:/host/proc:ro sysdig/sysdig csysdig"
+      alias sysdig="docker run -i -t --rm --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /dev:/host/dev -v /proc:/host/proc:ro sysdig/sysdig sysdig"

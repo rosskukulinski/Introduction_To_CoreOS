@@ -1,0 +1,27 @@
+[Unit]
+Description=ToDo Service
+
+Requires=docker.service
+Requires=todo-sk@%i.service
+After=docker.service
+
+[Service]
+EnvironmentFile=/etc/environment
+User=core
+
+Restart=always
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill %p-%i
+ExecStartPre=-/usr/bin/docker rm %p-%i
+ExecStartPre=/usr/bin/docker pull rosskukulinski/angular-todo-rethinkdb
+ExecStart=/usr/bin/docker run --name %p-%i \
+      -h %H \
+      -p ${COREOS_PRIVATE_IPV4}:3000:3000 \
+      -e INSTANCE=%p-%i \
+      rosskukulinski/angular-todo-rethinkdb
+ExecStop=-/usr/bin/docker kill %p-%i
+ExecStop=-/usr/bin/docker rm %p-%i
+
+[X-Fleet]
+Conflicts=todo@*.service
+MachineMetadata=role=worker

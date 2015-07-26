@@ -1,0 +1,7 @@
+#cloud-config
+coreos:
+  fleet:
+      public-ip: $public_ipv4
+      metadata: "region=us-west,disk=ssd"
+
+# Full documentation: https://github.com/coreos/fleet/blob/master/Documentation/deployment-and-configuration.md#configuration

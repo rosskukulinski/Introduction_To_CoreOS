@@ -1,0 +1,61 @@
+#cloud-config
+hostname: services2
+coreos:
+  etcd2:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
+    discovery: https://discovery.etcd.io/024cd07613494a297c69ab790d6bedf6
+    # multi-region and multi-cloud deployments need to use $public_ipv4
+    advertise-client-urls: http://$private_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    # listen on both the official ports and the legacy ports
+    # legacy ports can be omitted if your application doesn't depend on them
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
+
+  fleet:
+      public-ip: $public_ipv4
+      metadata: "role=services,provider=digitialocean"
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: coregi.service
+      command: start
+      content: |
+        [Unit]
+        Description=CoreGI
+        After=docker.service
+        Requires=docker.service
+
+        [Service]
+        User=core
+        TimeoutStartSec=0
+        ExecStartPre=-/usr/bin/docker kill coregi
+        ExecStartPre=-/usr/bin/docker rm coregi
+        ExecStartPre=/usr/bin/docker pull yodlr/coregi:latest
+        ExecStart=/usr/bin/docker run --name coregi \
+              -p 3000:3000 \
+              yodlr/coregi:latest
+        ExecStop=/usr/bin/docker stop coregi
+  update:
+    reboot-strategy: etcd-lock
+
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDMeO8/MU8L2oOqSRPKOJ05jXQ3zldTFFVnF3HMUwt7dk0aS9KDG64UwsBSrmlsRQ2uwGgSAslYwtoJ4QMcrnL18RiTPUTuksg6p6guabwTu+xGgyh/aeJB4SEwXd5YW7BsKO6Kk1UiINxS5HAmyQd1QR+qWIfw5Q0PtlgCnnC35eOtqCVJoVtT8ooBfzs5QfnZaG3D6m0v5HtWFxSPLubj2Kscrppj9FqOllITyv+kY5OjvsFKdp0LQWVJXBS8JccyGkp7LAHGkysr0rF0R/TLUXf0jFpgNIGnd6TZ+y2o+Zzj1C53ok6K5wPfgVaNLAjUaYI0SIjFw04uTej0zlk9 rhk@rossk-air.local
+
+write_files:
+  - path: /home/core/.bashrc
+    owner: core:core
+    permissions: 0655
+    content: |
+      # Test for an interactive shell.  There is no need to set anything
+      # past this point for scp and rcp, and it's important to refrain from
+      # outputting anything in those cases.
+      if [[ $- != *i* ]] ; then
+      	# Shell is non-interactive.  Be done now!
+      	return
+      fi
+      # Put your fun stuff here.
+      alias csysdig="docker run -i -t --rm --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /dev:/host/dev -v /proc:/host/proc:ro sysdig/sysdig csysdig -pc"
+      alias sysdig="docker run -i -t --rm --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /dev:/host/dev -v /proc:/host/proc:ro sysdig/sysdig sysdig"

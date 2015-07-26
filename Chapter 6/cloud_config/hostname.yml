@@ -1,0 +1,4 @@
+#cloud-config
+
+hostname: coreos1
+# hostname: core01.staging.example.com
