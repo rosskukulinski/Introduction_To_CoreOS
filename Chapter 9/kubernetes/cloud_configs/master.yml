@@ -2,7 +2,7 @@
 coreos:
   etcd2:
     # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
-    discovery: https://discovery.etcd.io/024cd07613494a297c69ab790d6bedf6
+    discovery: https://discovery.etcd.io/f35341e0e6231f84f6a3519f7c668f0e
     listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
     proxy: on
 

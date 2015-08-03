@@ -48,7 +48,7 @@ spec:
         args:
         # command = "/kube2sky"
         - -domain=cluster.local
-        - --kube_master_url=http://10.134.5.109:8080
+        - --kube_master_url=http://104.236.136.5:8080
       - name: skydns
         image: gcr.io/google_containers/skydns:2015-03-11-001
         resources:
