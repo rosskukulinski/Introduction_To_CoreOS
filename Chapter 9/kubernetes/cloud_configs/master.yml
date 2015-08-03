@@ -1,0 +1,148 @@
+#cloud-config
+coreos:
+  etcd2:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
+    discovery: https://discovery.etcd.io/024cd07613494a297c69ab790d6bedf6
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    proxy: on
+
+  fleet:
+    public-ip: $public_ipv4
+    metadata: "role=master,provider=digitialocean"
+  flannel:
+    interface: $private_ipv4
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: generate-serviceaccount-key.service
+      command: start
+      content: |
+        [Unit]
+        Description=Generate service-account key file
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStart=/bin/openssl genrsa -out /opt/bin/kube-serviceaccount.key 2048 2>/dev/null
+        RemainAfterExit=yes
+        Type=oneshot
+    # Depending on your cloud provider, you may need this block
+    # - name: setup-network-environment.service
+    #   command: start
+    #   content: |
+    #     [Unit]
+    #     Description=Setup Network Environment
+    #     Documentation=https://github.com/kelseyhightower/setup-network-environment
+    #     Requires=network-online.target
+    #     After=network-online.target
+    #     [Service]
+    #     ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+    #     ExecStartPre=/usr/bin/curl -L -o /opt/bin/setup-network-environment -z /opt/bin/setup-network-environment https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+    #     ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+    #     ExecStart=/opt/bin/setup-network-environment
+    #     RemainAfterExit=yes
+    #     Type=oneshot
+    - name: flanneld.service
+      command: start
+      drop-ins:
+        - name: 50-network-config.conf
+          content: |
+            [Service]
+            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ "Network": "192.168.0.0/16", "Backend": {"Type": "vxlan"} }'
+    - name: kube-apiserver.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes API Server
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=network-online.target etcd2.service generate-serviceaccount-key.service
+        After=network-online.target etcd2.service generate-serviceaccount-key.service
+        [Service]
+        EnvironmentFile=/etc/environment
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-apiserver -z /opt/bin/kube-apiserver https://storage.googleapis.com/kubernetes-release/release/v1.0.1/bin/linux/amd64/kube-apiserver
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
+        ExecStartPre=/opt/bin/wupiao 127.0.0.1:2379/v2/machines
+        ExecStart=/opt/bin/kube-apiserver \
+        --service_account_key_file=/opt/bin/kube-serviceaccount.key \
+        --service_account_lookup=false \
+        --admission_control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota \
+        --runtime_config=api/v1 \
+        --allow_privileged=true \
+        --insecure_bind_address=0.0.0.0 \
+        --insecure_port=8080 \
+        --kubelet_https=true \
+        --secure_port=6443 \
+        --service-cluster-ip-range=10.100.0.0/16 \
+        --etcd_servers=http://127.0.0.1:2379 \
+        --public_address_override=${COREOS_PRIVATE_IPV4} \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-controller-manager.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Controller Manager
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-controller-manager -z /opt/bin/kube-controller-manager https://storage.googleapis.com/kubernetes-release/release/v1.0.1/bin/linux/amd64/kube-controller-manager
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
+        ExecStart=/opt/bin/kube-controller-manager \
+        --service_account_private_key_file=/opt/bin/kube-serviceaccount.key \
+        --master=127.0.0.1:8080 \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-scheduler.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Scheduler
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-scheduler -z /opt/bin/kube-scheduler https://storage.googleapis.com/kubernetes-release/release/v1.0.1/bin/linux/amd64/kube-scheduler
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
+        ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
+        Restart=always
+        RestartSec=10
+  update:
+    reboot-strategy: off
+
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDMeO8/MU8L2oOqSRPKOJ05jXQ3zldTFFVnF3HMUwt7dk0aS9KDG64UwsBSrmlsRQ2uwGgSAslYwtoJ4QMcrnL18RiTPUTuksg6p6guabwTu+xGgyh/aeJB4SEwXd5YW7BsKO6Kk1UiINxS5HAmyQd1QR+qWIfw5Q0PtlgCnnC35eOtqCVJoVtT8ooBfzs5QfnZaG3D6m0v5HtWFxSPLubj2Kscrppj9FqOllITyv+kY5OjvsFKdp0LQWVJXBS8JccyGkp7LAHGkysr0rF0R/TLUXf0jFpgNIGnd6TZ+y2o+Zzj1C53ok6K5wPfgVaNLAjUaYI0SIjFw04uTej0zlk9 rhk@rossk-air.local
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCeXdXjlb2Pqr6r2LKYiO7pA5ImhTmawD7K+PzbqXk9G4U7YiHowZLd0RONdSA4D16W35BFbTPhfnTre0x6SKhIJXhpIrAqyC96f/67rAPWH5B740F6RUSGjDu9D0ck6F66PUnnbWLhVjNtvZT+gIpRrlk+5WjZp4vNv5V00UrKUAtynd7rDwxyikT9ds0HzSXGDWG2REKdmEVIigsFhHw9MGEKoPTXOXskK8fOOszdXY6PLi9B8Mhmt8F07NvG0Zn8RU73HY3TXWY8jd3FtHhfSpYznzWJlE5zjcIyhPw+dqu0gfU8ijdZMBiAqTWsxQxiz6LZ4wwTr/Zp8XUQkKOF
+
+write_files:
+  - path: /home/core/.bashrc
+    owner: core:core
+    permissions: 0655
+    content: |
+      # Test for an interactive shell.  There is no need to set anything
+      # past this point for scp and rcp, and it's important to refrain from
+      # outputting anything in those cases.
+      if [[ $- != *i* ]] ; then
+      	# Shell is non-interactive.  Be done now!
+      	return
+      fi
+      # Put your fun stuff here.
+      alias csysdig="docker run -i -t --rm --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /dev:/host/dev -v /proc:/host/proc:ro sysdig/sysdig csysdig -pc"
+      alias sysdig="docker run -i -t --rm --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /dev:/host/dev -v /proc:/host/proc:ro sysdig/sysdig sysdig"
+  - path: /etc/conf.d/nfs
+    permissions: '0644'
+    content: |
+      OPTS_RPC_MOUNTD=""
+  - path: /opt/bin/wupiao
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # [w]ait [u]ntil [p]ort [i]s [a]ctually [o]pen
+      [ -n "$1" ] && \
+        until curl -o /dev/null -sIf http://${1}; do \
+          sleep 1 && echo .;
+        done;
+      exit $?
