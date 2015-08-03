@@ -51,10 +51,10 @@ coreos:
         ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-proxy -z /opt/bin/kube-proxy https://storage.googleapis.com/kubernetes-release/release/v1.0.1/bin/linux/amd64/kube-proxy
         ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
         # wait for kubernetes master to be up and ready
-        ExecStartPre=/opt/bin/wupiao 104.236.136.5 8080
+        ExecStartPre=/opt/bin/wupiao MASTER 8080
         # Replace with the private IP of your master
         ExecStart=/opt/bin/kube-proxy \
-        --master=104.236.136.5:8080 \
+        --master=MASTER:8080 \
         --logtostderr=true
         Restart=always
         RestartSec=10
@@ -71,12 +71,12 @@ coreos:
         ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet https://storage.googleapis.com/kubernetes-release/release/v1.0.1/bin/linux/amd64/kubelet
         ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
         # wait for kubernetes master to be up and ready
-        ExecStartPre=/opt/bin/wupiao 104.236.136.5 8080
+        ExecStartPre=/opt/bin/wupiao MASTER 8080
         ExecStart=/opt/bin/kubelet \
         --address=0.0.0.0 \
         --port=10250 \
         --hostname_override=${COREOS_PRIVATE_IPV4} \
-        --api_servers=104.236.136.5:8080 \
+        --api_servers=MASTER:8080 \
         --allow_privileged=true \
         --logtostderr=true \
         --cadvisor_port=4194 \
