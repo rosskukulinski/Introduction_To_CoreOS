@@ -1,0 +1,10 @@
+[Unit]
+Description=Remove all unused docker images
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/docker rmi $(docker images -q)
+
+[X-Fleet]
+Global=true
